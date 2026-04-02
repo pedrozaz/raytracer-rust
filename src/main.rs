@@ -78,7 +78,14 @@ fn main() {
         Box::new(Dielectric::new(1.5)),
     )));
 
-    let camera = Camera::new();
+    // Camera Configs
+    let lookfrom = Vec3::new(-2.0, 2.0, 1.0);
+    let lookat = Vec3::new(0.0, 0.0, -1.0);
+    let vup = Vec3::new(0.0, 0.0, -1.0);
+    let aspect_ratio = nx as f64 / ny as f64;
+    let vfov = 20.0;
+
+    let camera = Camera::new(lookfrom, lookat, vup, vfov, aspect_ratio);
     let mut rng = rand::rng();
 
     println!("P3\n{} {}\n255", nx, ny);
