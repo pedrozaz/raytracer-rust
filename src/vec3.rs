@@ -45,35 +45,30 @@ impl Add for Vec3 {
     }
 }
 
+impl Sub for Vec3 {
+    type Output = Self;
+    fn sub(self, other: Self) -> Self {
+        Self::new(self.x - other.x, self.y - other.y, self.z - other.z)
+    }
+}
+
+impl Mul for Vec3 {
+    type Output = Self;
+    fn mul(self, other: Self) -> Self {
+        Self::new(self.x * other.x, self.y * other.y, self.z * other.z)
+    }
+}
+
+impl Div for Vec3 {
+    type Output = Self;
+    fn div(self, other: Self) -> Self {
+        Self::new(self.x / other.x, self.y / other.y, self.z / other.z)
+    }
+}
+
 impl Div<f64> for Vec3 {
     type Output = Self;
-
     fn div(self, t: f64) -> Self::Output {
         Self::new(self.x / t, self.y / t, self.z / t)
     }
 }
-
-impl Mul<f64> for Vec3 {
-    type Output = Self;
-
-    fn mul(self, t: f64) -> Self::Output {
-        Self::new(self.x * t, self.y * t, self.z * t)
-    }
-}
-
-impl Add<f64> for Vec3 {
-    type Output = Self;
-
-    fn add(self, t: f64) -> Self::Output {
-        Self::new(self.x + t, self.y + t, self.z + t)
-    }
-}
-
-impl Sub<f64> for Vec3 {
-    type Output = Self;
-
-    fn sub(self, t: f64) -> Self::Output {
-        Self::new(self.x - t, self.y - t, self.z - t)
-    }
-}
-
