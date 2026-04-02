@@ -10,7 +10,7 @@ use camera::Camera;
 use core::f64;
 use hittable::Hittable;
 use hittable_list::HittableList;
-use rand::RngExt;
+use rand::{RngExt, rng};
 use ray::Ray;
 use sphere::Sphere;
 use vec3::Vec3;
@@ -82,10 +82,20 @@ fn main() {
     let lookfrom = Vec3::new(-2.0, 2.0, 1.0);
     let lookat = Vec3::new(0.0, 0.0, -1.0);
     let vup = Vec3::new(0.0, 0.0, -1.0);
+    let dist_to_focus = (lookfrom - lookat).length();
+    let aperture = 2.0;
     let aspect_ratio = nx as f64 / ny as f64;
     let vfov = 20.0;
 
-    let camera = Camera::new(lookfrom, lookat, vup, vfov, aspect_ratio);
+    let camera = Camera::new(
+        lookfrom,
+        lookat,
+        vup,
+        vfov,
+        aspect_ratio,
+        aperture,
+        dist_to_focus,
+    );
     let mut rng = rand::rng();
 
     println!("P3\n{} {}\n255", nx, ny);
@@ -98,7 +108,7 @@ fn main() {
                 let u = (i as f64 + rng.random::<f64>()) / nx as f64;
                 let v = (j as f64 + rng.random::<f64>()) / ny as f64;
 
-                let r = camera.get_ray(u, v);
+                let r = camera.get_ray(u, v, &mut rng);
                 color = color + calculate_color(&r, &world, &mut rng, 50);
             }
 
