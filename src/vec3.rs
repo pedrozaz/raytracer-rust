@@ -53,3 +53,27 @@ impl Div<f64> for Vec3 {
     }
 }
 
+impl Mul<f64> for Vec3 {
+    type Output = Self;
+
+    fn mul(self, t: f64) -> Self::Output {
+        Self::new(self.x * t, self.y * t, self.z * t)
+    }
+}
+
+impl Add<f64> for Vec3 {
+    type Output = Self;
+
+    fn add(self, t: f64) -> Self::Output {
+        Self::new(self.x + t, self.y + t, self.z + t)
+    }
+}
+
+impl Sub<f64> for Vec3 {
+    type Output = Self;
+
+    fn sub(self, t: f64) -> Self::Output {
+        Self::new(self.x - t, self.y - t, self.z - t)
+    }
+}
+
