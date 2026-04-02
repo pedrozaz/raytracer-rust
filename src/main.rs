@@ -1,14 +1,14 @@
+mod camera;
 mod hittable;
 mod hittable_list;
 mod ray;
 mod sphere;
 mod vec3;
 
-use core::f64;
-use std::slice::Windows;
-
+use camera::Camera;
 use hittable::Hittable;
 use hittable_list::HittableList;
+use rand::RngExt;
 use ray::Ray;
 use sphere::Sphere;
 use vec3::Vec3;
@@ -44,6 +44,7 @@ fn calculate_color(r: &Ray, world: &dyn Hittable) -> Vec3 {
 fn main() {
     let nx = 200;
     let ny = 100;
+    let samples_per_pixel = 100;
 
     println!("P3\n{} {}\n255", nx, ny);
 
@@ -56,17 +57,24 @@ fn main() {
     world.push(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5)));
     world.push(Box::new(Sphere::new(Vec3::new(0.0, 100.5, -1.0), 100.0)));
 
+    let camera = Camera::new();
+    let mut rng = rand::rng();
+
     println!("P3\n {} {}\n255", nx, ny);
 
     for j in (0..ny).rev() {
         for i in 0..nx {
-            let u = i as f64 / nx as f64;
-            let v = j as f64 / ny as f64;
+            let mut color = Vec3::new(0.0, 0.0, 0.0);
 
-            let direction = lower_left_corner + (horizontal * u) + (vertical * v);
-            let r = Ray::new(origin, direction);
+            for _ in 0..samples_per_pixel {
+                let u = (i as f64 + rng.random::<f64>()) / nx as f64;
+                let v = (j as f64 + rng.random::<f64>()) / ny as f64;
 
-            let color = calculate_color(&r, &world);
+                let r = camera.get_ray(u, v);
+                color = color + calculate_color(&r, &world);
+            }
+
+            color = color / samples_per_pixel as f64;
 
             let ir = (255.99 * color.x) as i32;
             let ig = (255.99 * color.y) as i32;
