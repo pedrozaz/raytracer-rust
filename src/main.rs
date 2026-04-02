@@ -1,3 +1,5 @@
+mod vec3;
+
 fn main() {
     let width: i16 = 200;
     let height: i16 = 100;
