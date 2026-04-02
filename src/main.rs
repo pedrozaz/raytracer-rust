@@ -1,40 +1,37 @@
 mod camera;
 mod hittable;
 mod hittable_list;
+mod material;
 mod ray;
 mod sphere;
 mod vec3;
 
-use core::f64;
-
 use camera::Camera;
+use core::f64;
 use hittable::Hittable;
 use hittable_list::HittableList;
-use rand::{RngExt, random};
+use rand::RngExt;
 use ray::Ray;
 use sphere::Sphere;
 use vec3::Vec3;
 
-fn hit_sphere(center: Vec3, radius: f64, ray: &Ray) -> bool {
-    let oc = ray.origin - center;
-    let a = Vec3::dot(ray.direction, ray.direction);
-    let b = 2.0 * Vec3::dot(oc, ray.direction);
-    let c = Vec3::dot(oc, oc) - radius * radius;
+use crate::material::{Lambertian, Metal};
 
-    let discriminant = b * b - 4.0 * a * c;
-    discriminant > 0.0
-}
-
-fn calculate_color(r: &Ray, world: &dyn Hittable, rng: &mut impl rand::Rng, depth: i32) -> Vec3 {
+fn calculate_color(
+    r: &Ray,
+    world: &dyn Hittable,
+    rng: &mut rand::rngs::ThreadRng,
+    depth: i32,
+) -> Vec3 {
     if depth <= 0 {
         return Vec3::new(0.0, 0.0, 0.0);
     }
 
     if let Some(record) = world.hit(r, 0.001, f64::INFINITY) {
-        let target = record.p + record.normal + random_in_unit_sphere(rng);
-        let scattered = Ray::new(record.p, target - record.p);
-
-        return calculate_color(&scattered, world, rng, depth - 1) * 0.5;
+        if let Some((attenuation, scattered)) = record.material.scatter(r, &record, rng) {
+            return attenuation * calculate_color(&scattered, world, rng, depth - 1);
+        }
+        return Vec3::new(0.0, 0.0, 0.0);
     }
 
     let unit_direction = r.direction.normalize();
@@ -45,40 +42,37 @@ fn calculate_color(r: &Ray, world: &dyn Hittable, rng: &mut impl rand::Rng, dept
     (white * (1.0 - t)) + (blue * t)
 }
 
-fn random_in_unit_sphere(rng: &mut impl rand::Rng) -> Vec3 {
-    loop {
-        // rng.random::<f64> returns [0.0, 1.0). Mapped to [-1.0, 1.0)
-        let p = Vec3::new(
-            rng.random::<f64>() * 2.0 - 1.0,
-            rng.random::<f64>() * 2.0 - 1.0,
-            rng.random::<f64>() * 2.0 - 1.0,
-        );
-        if p.squared_lenght() < 1.0 {
-            return p;
-        }
-    }
-}
-
 fn main() {
     let nx = 200;
     let ny = 100;
     let samples_per_pixel = 100;
 
-    println!("P3\n{} {}\n255", nx, ny);
-
-    let lower_left_corner = Vec3::new(-2.0, -1.0, -1.0);
-    let horizontal = Vec3::new(4.0, 0.0, 0.0);
-    let vertical = Vec3::new(0.0, 2.0, 0.0);
-    let origin = Vec3::new(0.0, 0.0, 0.0);
-
     let mut world = HittableList::new();
-    world.push(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5)));
-    world.push(Box::new(Sphere::new(Vec3::new(0.0, 100.5, -1.0), 100.0)));
+    world.push(Box::new(Sphere::new(
+        Vec3::new(0.0, 0.0, -1.0),
+        0.5,
+        Box::new(Lambertian::new(Vec3::new(0.8, 0.3, 0.3))),
+    )));
+    world.push(Box::new(Sphere::new(
+        Vec3::new(0.0, -100.5, -1.0),
+        100.0,
+        Box::new(Lambertian::new(Vec3::new(0.8, 0.8, 0.0))),
+    )));
+    world.push(Box::new(Sphere::new(
+        Vec3::new(1.0, 0.0, -1.0),
+        0.5,
+        Box::new(Metal::new(Vec3::new(0.8, 0.6, 0.2), 0.3)),
+    )));
+    world.push(Box::new(Sphere::new(
+        Vec3::new(-1.0, 0.0, -1.0),
+        0.5,
+        Box::new(Metal::new(Vec3::new(0.8, 0.8, 0.8), 1.0)),
+    )));
 
     let camera = Camera::new();
     let mut rng = rand::rng();
 
-    println!("P3\n {} {}\n255", nx, ny);
+    println!("P3\n{} {}\n255", nx, ny);
 
     for j in (0..ny).rev() {
         for i in 0..nx {
@@ -92,6 +86,7 @@ fn main() {
                 color = color + calculate_color(&r, &world, &mut rng, 50);
             }
 
+            color = color / samples_per_pixel as f64;
             color = Vec3::new(color.x.sqrt(), color.y.sqrt(), color.z.sqrt());
 
             let ir = (255.99 * color.x) as i32;

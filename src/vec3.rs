@@ -1,3 +1,4 @@
+use rand::RngExt;
 use std::ops::{Add, Div, Mul, Sub};
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -36,6 +37,23 @@ impl Vec3 {
             v1.x * v2.y - v1.y * v2.x,
         )
     }
+
+    pub fn random_in_unit_sphere(rng: &mut rand::rngs::ThreadRng) -> Self {
+        loop {
+            let p = Self::new(
+                rng.random::<f64>() * 2.0 - 1.0,
+                rng.random::<f64>() * 2.0 - 1.0,
+                rng.random::<f64>() * 2.0 - 1.0,
+            );
+            if p.squared_lenght() < 1.0 {
+                return p;
+            }
+        }
+    }
+
+    pub fn reflect(v: Self, n: Self) -> Self {
+        v - (n * (2.0 * Self::dot(v, n)))
+    }
 }
 
 impl Add for Vec3 {
@@ -49,13 +67,6 @@ impl Sub for Vec3 {
     type Output = Self;
     fn sub(self, other: Self) -> Self {
         Self::new(self.x - other.x, self.y - other.y, self.z - other.z)
-    }
-}
-
-impl Mul for Vec3 {
-    type Output = Self;
-    fn mul(self, other: Self) -> Self {
-        Self::new(self.x * other.x, self.y * other.y, self.z * other.z)
     }
 }
 
@@ -77,5 +88,12 @@ impl Mul<f64> for Vec3 {
     type Output = Self;
     fn mul(self, t: f64) -> Self::Output {
         Self::new(self.x * t, self.y * t, self.z * t)
+    }
+}
+
+impl Mul<Vec3> for Vec3 {
+    type Output = Self;
+    fn mul(self, other: Self) -> Self {
+        Self::new(self.x * other.x, self.y * other.y, self.z * other.z)
     }
 }
