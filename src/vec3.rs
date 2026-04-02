@@ -72,3 +72,10 @@ impl Div<f64> for Vec3 {
         Self::new(self.x / t, self.y / t, self.z / t)
     }
 }
+
+impl Mul<f64> for Vec3 {
+    type Output = Self;
+    fn mul(self, t: f64) -> Self::Output {
+        Self::new(self.x * t, self.y * t, self.z * t)
+    }
+}
