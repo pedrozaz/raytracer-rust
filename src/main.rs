@@ -14,6 +14,7 @@ use rand::RngExt;
 use ray::Ray;
 use rayon::prelude::*;
 use sphere::Sphere;
+use std::time::Instant;
 use vec3::Vec3;
 
 use crate::material::{Dielectric, Lambertian, Metal};
@@ -174,9 +175,10 @@ fn main() {
         aperture,
         dist_to_focus,
     );
-    let mut rng = rand::rng();
 
     println!("P3\n{} {}\n255", nx, ny);
+
+    let start_time = Instant::now();
 
     let pixels: Vec<Vec<Vec3>> = (0..ny)
         .into_par_iter()
@@ -217,5 +219,6 @@ fn main() {
         }
     }
 
-    eprintln!("Done.")
+    eprintln!("Done.");
+    eprint!("Render time: {:.2?}", start_time.elapsed());
 }
