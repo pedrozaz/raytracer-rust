@@ -10,7 +10,7 @@ use camera::Camera;
 use core::f64;
 use hittable::Hittable;
 use hittable_list::HittableList;
-use rand::{RngExt, rng};
+use rand::RngExt;
 use ray::Ray;
 use sphere::Sphere;
 use vec3::Vec3;
@@ -42,12 +42,89 @@ fn calculate_color(
     (white * (1.0 - t)) + (blue * t)
 }
 
-fn main() {
-    let nx = 200;
-    let ny = 100;
-    let samples_per_pixel = 100;
-
+fn random_scene(rng: &mut rand::rngs::ThreadRng) -> HittableList {
     let mut world = HittableList::new();
+
+    world.push(Box::new(Sphere::new(
+        Vec3::new(0.0, -1000.0, 0.0),
+        1000.0,
+        Box::new(Lambertian::new(Vec3::new(0.5, 0.5, 0.5))),
+    )));
+
+    for a in -11..11 {
+        for b in -11..11 {
+            let choose_mat = rng.random::<f64>();
+            let center = Vec3::new(
+                a as f64 + 0.9 * rng.random::<f64>(),
+                0.2,
+                b as f64 + 0.9 * rng.random::<f64>(),
+            );
+
+            if (center - Vec3::new(4.0, 0.2, 0.0)).length() > 0.9 {
+                if choose_mat < 0.8 {
+                    // Diffuse
+                    let albedo = Vec3::new(
+                        rng.random::<f64>() * rng.random::<f64>(),
+                        rng.random::<f64>() * rng.random::<f64>(),
+                        rng.random::<f64>() * rng.random::<f64>(),
+                    );
+                    world.push(Box::new(Sphere::new(
+                        center,
+                        0.2,
+                        Box::new(Lambertian::new(albedo)),
+                    )));
+                } else if choose_mat < 0.95 {
+                    // Metal
+                    let albedo = Vec3::new(
+                        0.5 * (1.0 + rng.random::<f64>()),
+                        0.5 * (1.0 + rng.random::<f64>()),
+                        0.5 * (1.0 + rng.random::<f64>()),
+                    );
+                    let fuzz = 0.5 * rng.random::<f64>();
+                    world.push(Box::new(Sphere::new(
+                        center,
+                        0.2,
+                        Box::new(Metal::new(albedo, fuzz)),
+                    )));
+                } else {
+                    // Glass
+                    world.push(Box::new(Sphere::new(
+                        center,
+                        0.2,
+                        Box::new(Dielectric::new(1.5)),
+                    )));
+                }
+            }
+        }
+    }
+
+    world.push(Box::new(Sphere::new(
+        Vec3::new(0.0, 1.0, 0.0),
+        1.0,
+        Box::new(Dielectric::new(1.5)),
+    )));
+    world.push(Box::new(Sphere::new(
+        Vec3::new(-4.0, 1.0, 0.0),
+        1.0,
+        Box::new(Lambertian::new(Vec3::new(0.4, 0.2, 0.1))),
+    )));
+    world.push(Box::new(Sphere::new(
+        Vec3::new(4.0, 1.0, 0.0),
+        1.0,
+        Box::new(Metal::new(Vec3::new(0.7, 0.6, 0.5), 0.0)),
+    )));
+
+    world
+}
+
+fn main() {
+    let nx = 1200;
+    let ny = 800;
+    let samples_per_pixel = 10;
+
+    let mut rng = rand::rng();
+    let mut world = random_scene(&mut rng);
+
     world.push(Box::new(Sphere::new(
         Vec3::new(0.0, 0.0, -1.0),
         0.5,
@@ -79,11 +156,11 @@ fn main() {
     )));
 
     // Camera Configs
-    let lookfrom = Vec3::new(-2.0, 2.0, 1.0);
-    let lookat = Vec3::new(0.0, 0.0, -1.0);
-    let vup = Vec3::new(0.0, 0.0, -1.0);
+    let lookfrom = Vec3::new(13.0, 2.0, 3.0);
+    let lookat = Vec3::new(0.0, 0.0, 0.0);
+    let vup = Vec3::new(0.0, 1.0, 0.0);
     let dist_to_focus = (lookfrom - lookat).length();
-    let aperture = 2.0;
+    let aperture = 0.1;
     let aspect_ratio = nx as f64 / ny as f64;
     let vfov = 20.0;
 
@@ -101,6 +178,8 @@ fn main() {
     println!("P3\n{} {}\n255", nx, ny);
 
     for j in (0..ny).rev() {
+        eprintln!("Scanlines remaining: {}", j);
+
         for i in 0..nx {
             let mut color = Vec3::new(0.0, 0.0, 0.0);
 
@@ -122,4 +201,5 @@ fn main() {
             println!("{} {} {}", ir, ig, ib);
         }
     }
+    eprintln!("Done.")
 }
