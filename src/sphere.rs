@@ -6,11 +6,11 @@ use crate::vec3::Vec3;
 pub struct Sphere {
     pub center: Vec3,
     pub radius: f64,
-    pub material: Box<dyn Material>,
+    pub material: Box<dyn Material + Send + Sync>,
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: f64, material: Box<dyn Material>) -> Self {
+    pub fn new(center: Vec3, radius: f64, material: Box<dyn Material + Send + Sync>) -> Self {
         Self {
             center,
             radius,

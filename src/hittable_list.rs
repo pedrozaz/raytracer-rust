@@ -2,7 +2,7 @@ use crate::hittable::{HitRecord, Hittable};
 use crate::ray::Ray;
 
 pub struct HittableList {
-    pub list: Vec<Box<dyn Hittable>>,
+    pub list: Vec<Box<dyn Hittable + Send + Sync>>,
 }
 
 impl HittableList {
@@ -10,7 +10,7 @@ impl HittableList {
         Self { list: Vec::new() }
     }
 
-    pub fn push(&mut self, hittable: Box<dyn Hittable>) {
+    pub fn push(&mut self, hittable: Box<dyn Hittable + Send + Sync>) {
         self.list.push(hittable);
     }
 }

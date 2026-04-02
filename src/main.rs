@@ -12,6 +12,7 @@ use hittable::Hittable;
 use hittable_list::HittableList;
 use rand::RngExt;
 use ray::Ray;
+use rayon::prelude::*;
 use sphere::Sphere;
 use vec3::Vec3;
 
@@ -19,7 +20,7 @@ use crate::material::{Dielectric, Lambertian, Metal};
 
 fn calculate_color(
     r: &Ray,
-    world: &dyn Hittable,
+    world: &(dyn Hittable + Send + Sync),
     rng: &mut rand::rngs::ThreadRng,
     depth: i32,
 ) -> Vec3 {
@@ -177,29 +178,44 @@ fn main() {
 
     println!("P3\n{} {}\n255", nx, ny);
 
-    for j in (0..ny).rev() {
-        eprintln!("Scanlines remaining: {}", j);
+    let pixels: Vec<Vec<Vec3>> = (0..ny)
+        .into_par_iter()
+        .map(|row_idx| {
+            let j = ny - 1 - row_idx;
 
-        for i in 0..nx {
-            let mut color = Vec3::new(0.0, 0.0, 0.0);
+            let mut row = Vec::with_capacity(nx as usize);
+            let mut thread_rng = rand::rng();
 
-            for _ in 0..samples_per_pixel {
-                let u = (i as f64 + rng.random::<f64>()) / nx as f64;
-                let v = (j as f64 + rng.random::<f64>()) / ny as f64;
+            for i in 0..nx {
+                let mut color = Vec3::new(0.0, 0.0, 0.0);
 
-                let r = camera.get_ray(u, v, &mut rng);
-                color = color + calculate_color(&r, &world, &mut rng, 50);
+                for _ in 0..samples_per_pixel {
+                    let u = (i as f64 + thread_rng.random::<f64>()) / nx as f64;
+                    let v = (j as f64 + thread_rng.random::<f64>()) / ny as f64;
+
+                    let r = camera.get_ray(u, v, &mut thread_rng);
+                    color = color + calculate_color(&r, &world, &mut thread_rng, 50);
+                }
+
+                color = color / samples_per_pixel as f64;
+                color = Vec3::new(color.x.sqrt(), color.y.sqrt(), color.z.sqrt());
+
+                row.push(color);
             }
 
-            color = color / samples_per_pixel as f64;
-            color = Vec3::new(color.x.sqrt(), color.y.sqrt(), color.z.sqrt());
+            eprintln!("Line processed...");
+            row
+        })
+        .collect();
 
+    for row in pixels {
+        for color in row {
             let ir = (255.99 * color.x) as i32;
             let ig = (255.99 * color.y) as i32;
             let ib = (255.99 * color.z) as i32;
-
             println!("{} {} {}", ir, ig, ib);
         }
     }
+
     eprintln!("Done.")
 }
