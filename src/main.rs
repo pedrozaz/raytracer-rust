@@ -4,10 +4,24 @@ mod vec3;
 use ray::Ray;
 use vec3::Vec3;
 
-fn color(r: &Ray) -> Vec3 {
-    let unit_direction = r.direction.normalize();
+fn hit_sphere(center: Vec3, radius: f64, ray: &Ray) -> bool {
+    let oc = ray.origin - center;
+    let a = Vec3::dot(ray.direction, ray.direction);
+    let b = 2.0 * Vec3::dot(oc, ray.direction);
+    let c = Vec3::dot(oc, oc) - radius * radius;
 
+    let discriminant = b * b - 4.0 * a * c;
+    discriminant > 0.0
+}
+
+fn calculate_color(r: &Ray) -> Vec3 {
+    if hit_sphere(Vec3::new(0.0, 0.0, -1.0), 0.5, r) {
+        return Vec3::new(1.0, 0.0, 0.0);
+    }
+
+    let unit_direction = r.direction.normalize();
     let t = 0.5 * (unit_direction.y + 1.0);
+
     let white = Vec3::new(1.0, 1.0, 1.0);
     let blue = Vec3::new(0.5, 0.7, 1.0);
 
@@ -33,11 +47,11 @@ fn main() {
             let direction = lower_left_corner + (horizontal * u) + (vertical * v);
             let r = Ray::new(origin, direction);
 
-            let col = color(&r);
+            let color = calculate_color(&r);
 
-            let ir = (255.99 * col.x) as i32;
-            let ig = (255.99 * col.y) as i32;
-            let ib = (255.99 * col.z) as i32;
+            let ir = (255.99 * color.x) as i32;
+            let ig = (255.99 * color.y) as i32;
+            let ib = (255.99 * color.z) as i32;
 
             println!("{} {} {}", ir, ig, ib);
         }
